@@ -1,8 +1,8 @@
-# chat-bot
+# chat-app
 
 # Initial Setup
-`docker run -d -p 4100:3000 -p 4106:3306 --name "sosa-bot" --rm -v "E:/Development/sosa-bot/bot/":/var/www/html:Z -t sosa/chat`
-`docker exec -w /var/www/html -it sosa-bot npm install`
+`docker run -d -p 4100:3000 -p 4106:3306 --name "sosa-app" --rm -v "E:/Development/sosa-app/app/":/var/www/html:Z -t sosa/chat`
+`docker exec -w /var/www/html -it sosa-app npm install`
 
 # Run
 From Windows command line with the docker instance running

@@ -1,59 +1,67 @@
-'use strict';
+import {ChatClient} from "./chat-client/module.js";
 
-const __filename = import.meta.url;
-const __dirname = new URL(import.meta.url).pathname;
+export default class Bot {
+    currentRoom = null;
+    client = null;
+    middleware = null;
 
-import io from 'socket.io-client';
-
-import { SoSaConfig } from "./config.js";
-import {ChatClient, Message, MessageParser} from './chat-client/module.js';
-
-console.debug(io);
-
-
-let client = new ChatClient({
-    host: SoSaConfig.chat.server,
-    api_key: SoSaConfig.chat.api_key
-}, io);
-
-let middleware = client.middleware;
-
-middleware.clear();
-
-let currentRoom = null;
-
-function sendMessage(message){
-    client.rooms().send(() => {}, currentRoom.community_id, currentRoom.name, message);
-}
-
-function joinRoom(communityID, roomID, callback){
-
-    client.rooms().join((err, room, userList) => {
-        if(err){
-            console.debug('Couldn\'t join room',err);
-        }else{
-            currentRoom = room;
-            console.debug(`Joined room ${room.name}`);
-            sendMessage('hello james');
-
-        }
-
-    }, communityID, roomID);
-};
-
-middleware.add({
-    'receive_message': (message, client) => {
-
-        return message;
-    },
-    'after_authenticated': (authData, client) => {
-        joinRoom('sosa', 'general');
-
-        return authData;
-    },
-    'disconnect': (message, client) => {
-        return message;
+    constructor(io, server, apiKey) {
+        this.client = new ChatClient({host: server,api_key: apiKey}, io);
+        this.middleware = this.client.middleware;
     }
-});
 
-client.connect();
+    sendMessage(communityID, roomID, message){
+        this.client.rooms().send(() => {}, communityID, roomID, message);
+    }
+
+    joinRoom(communityID, roomID, callback){
+        this.client.rooms().join((err, room, userList) => {
+            if(err){
+               console.debug('Couldn\'t join room', err);
+            }else{
+                this.currentRoom = room;
+            }
+            callback(room, userList);
+
+        }, communityID, roomID);
+    };
+
+    connect(onAuthenticated, onMessage, onDisconnect){
+        this.middleware.clear();
+        this.middleware.add({
+            'after_authenticated': (authData) => {
+                if(typeof onAuthenticated === 'function'){
+                    try{
+                        authData = onAuthenticated(authData);
+                    }catch(e){
+                        console.debug('onAuthenticated callback failed', onAuthenticated);
+                    }
+                }
+                return authData;
+            },
+            'receive_message': (message, client) => {
+                if(typeof onMessage === 'function'){
+                    try{
+                        message = onMessage(message);
+                    }catch(e){
+                        console.debug('onMessage callback failed', onMessage);
+                    }
+                }
+
+                return message;
+            },
+            'disconnect': (message, client) => {
+                if(typeof onDisconnect === 'function'){
+                    try{
+                        message = onDisconnect(message);
+                    }catch(e){
+                        console.debug('onDisconnect callback failed', onDisconnect);
+                    }
+                }
+                return message;
+            }
+        });
+
+        this.client.connect();
+    }
+}
