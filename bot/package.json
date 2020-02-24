@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "Chat Bot for SoSa",
   "main": "bot.js",
+  "type": "module",
   "scripts": {
     "test": "mocha"
   },
@@ -22,5 +23,8 @@
   "bugs": {
     "url": "https://github.com/SoSa-Community/chat-bot/issues"
   },
-  "homepage": "https://github.com/SoSa-Community/chat-bot#readme"
+  "homepage": "https://github.com/SoSa-Community/chat-bot#readme",
+  "dependencies": {
+    "socket.io-client": "^2.3.0"
+  }
 }
