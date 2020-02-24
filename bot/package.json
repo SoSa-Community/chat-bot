@@ -1,0 +1,26 @@
+{
+  "name": "sosa-chat-bot",
+  "version": "0.0.1",
+  "description": "Chat Bot for SoSa",
+  "main": "bot.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/SoSa-Community/chat-bot.git"
+  },
+  "keywords": [
+    "sosa",
+    "chat",
+    "bot",
+    "nodejs",
+    "javascript"
+  ],
+  "author": "James Mahy",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/SoSa-Community/chat-bot/issues"
+  },
+  "homepage": "https://github.com/SoSa-Community/chat-bot#readme"
+}
