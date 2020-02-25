@@ -101,7 +101,7 @@ handleMessage = (index) => {
         let row = messages[index];
 
         let sendMessage = () => {
-            bots[row.nickname].sendMessage('sosa', 'general', row.message.replace(/@[A-Z]+/,`@${randomUsername(true)}`));
+            bots[row.nickname].sendMessage('sosa', 'general', row.message.replace(/@[A-Z0-9]+/ig,`@${randomUsername(true)}`));
 
             if(messages[index + 1]){
                 let nextRow = messages[index + 1];
@@ -113,6 +113,8 @@ handleMessage = (index) => {
                 setTimeout(() => {
                     handleMessage(index + 1);
                 }, timeout);
+            }else{
+                handleMessage(0);
             }
         };
 
