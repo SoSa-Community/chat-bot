@@ -1,6 +1,7 @@
 import {ChatClient} from "./chat-client/module.js";
 
-export default class Bot {
+export default class BotCore {
+    connected = false;
     currentRoom = null;
     client = null;
     middleware = null;
@@ -51,6 +52,9 @@ export default class Bot {
                 return message;
             },
             'disconnect': (message, client) => {
+                this.connected = false;
+                this.currentRoom = null;
+
                 if(typeof onDisconnect === 'function'){
                     try{
                         message = onDisconnect(message);
