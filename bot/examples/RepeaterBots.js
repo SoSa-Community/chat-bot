@@ -106,7 +106,7 @@ handleMessage = (index) => {
             if(messages[index + 1]){
                 let nextRow = messages[index + 1];
                 let timeout = Math.round((nextRow.timestamp - row.timestamp) * 1000);
-                if(timeout < 0) timeout = 0;
+                if(timeout < 5000) timeout = 5000;
 
                 console.log(`Waiting ${timeout / 1000} seconds`);
 
@@ -137,7 +137,7 @@ handleMessage = (index) => {
             let onAuthenticated = (authData) => joinRoom();
             bots[row.nickname].connect(onAuthenticated);
         }else{
-            sendMessage();
+            joinRoom();
         }
     }
 };
