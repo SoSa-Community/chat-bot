@@ -101,9 +101,28 @@ handleMessage = (index) => {
         let row = messages[index];
 
         let sendMessage = () => {
+            console.log('send', index, messages.length);
             bots[row.nickname].sendMessage('sosa', 'general', row.message.replace(/@[A-Z0-9]+/ig,`@${randomUsername(true)}`));
+            if((index + 1) === messages.length){
+                console.log('Restarting');
+                bots.forEach((bot, index) => {
+                    if(bot !== null){
+                        try{
+                            bot.disconnect();
+                        }catch (e) {
 
-            if(messages[index + 1]){
+                        } finally {
+                           delete bots[index];
+                        }
+                    }
+                });
+
+
+                setTimeout(() => {
+                    handleMessage(0);
+                }, 60000 * 5);
+            }
+            else if(messages[index + 1]){
                 let nextRow = messages[index + 1];
                 let timeout = Math.round((nextRow.timestamp - row.timestamp) * 1000);
                 if(timeout < 5000) timeout = 5000;
@@ -113,9 +132,8 @@ handleMessage = (index) => {
                 setTimeout(() => {
                     handleMessage(index + 1);
                 }, timeout);
-            }else{
-                handleMessage(0);
             }
+
         };
 
         let joinRoom = () => {
