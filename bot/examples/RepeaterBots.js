@@ -87,6 +87,7 @@ try {
 
 let db = new bslite3(databasePath);
 let messages = db.prepare('select * from messages').all();
+let botCredentials = db.prepare('select * from bots').all();
 
 let bots = {};
 
@@ -102,6 +103,7 @@ handleMessage = (index) => {
 
         let sendMessage = () => {
             console.log('send', index, messages.length);
+
             bots[row.nickname].sendMessage('sosa', 'general', row.message.replace(/@[A-Z0-9]+/ig,`@${randomUsername(true)}`));
             if((index + 1) === messages.length){
                 console.log('Restarting');
@@ -150,7 +152,8 @@ handleMessage = (index) => {
         };
 
         if(!bots[row.nickname]){
-            bots[row.nickname] = new BotCore(io, SoSaConfig.chat.server, SoSaConfig.chat.api_key);
+            let botData = botCredentials[Object.keys(bots).length];
+            bots[row.nickname] = new BotCore(io, SoSaConfig.chat.server, SoSaConfig.chat.api_key, botData.id, botData.unique_id, botData.secret);
 
             let onAuthenticated = (authData) => joinRoom();
             bots[row.nickname].connect(onAuthenticated);

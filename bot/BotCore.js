@@ -1,4 +1,5 @@
-import {ChatClient} from "./chat-client/module.js";
+import {ChatClient} from "./sosa-chat-client/src/module.js";
+import jwt from 'jsonwebtoken';
 
 export default class BotCore {
     connected = false;
@@ -6,8 +7,19 @@ export default class BotCore {
     client = null;
     middleware = null;
 
-    constructor(io, server, apiKey) {
-        this.client = new ChatClient({host: server,api_key: apiKey}, io);
+    constructor(io, server, apiKey, botId, botToken, botSecret) {
+        this.client = new ChatClient(
+            {host: server,api_key: apiKey},
+            io,
+            (callback) => {
+
+                let packet = {id: botId};
+                console.log(packet);
+                let token = jwt.sign(packet, botSecret);
+                callback(token, botToken, true);
+
+            }
+        );
         this.middleware = this.client.middleware;
     }
 
