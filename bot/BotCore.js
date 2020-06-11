@@ -1,4 +1,4 @@
-import {ChatClient} from "./sosa-chat-client/src/module.js";
+import {ChatClient} from "sosa-chat-client";
 import jwt from 'jsonwebtoken';
 
 export default class BotCore {
