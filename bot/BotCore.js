@@ -11,13 +11,18 @@ export default class BotCore {
         this.client = new ChatClient(
             {host: server,api_key: apiKey},
             io,
-            (callback) => {
-
-                let packet = {id: botId};
-                console.log(packet);
-                let token = jwt.sign(packet, botSecret);
-                callback(token, botToken, true);
-
+            {
+                get:(callback) => {
+                    let packet = {id: botId};
+                    let token = jwt.sign(packet, botSecret);
+                    callback(token, botToken, true);
+                },
+                reauth:(callback) => {
+                    callback(new Error('Bots shouldn\'t need to reauth'));
+                },
+                authFailed:() => {
+                    console.error('Bot failed to auth', apiKey, botId, botToken, botSecret);
+                }
             }
         );
         this.middleware = this.client.middleware;
@@ -42,7 +47,7 @@ export default class BotCore {
     connect(onAuthenticated, onMessage, onDisconnect){
         this.middleware.clear();
         this.middleware.add({
-            'after_authenticated': (authData) => {
+            'authentication_successful': (authData) => {
                 if(typeof onAuthenticated === 'function'){
                     try{
                         authData = onAuthenticated(authData);
