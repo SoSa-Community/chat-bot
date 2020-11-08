@@ -1,4 +1,4 @@
-import {ChatClient} from "sosa-chat-client";
+import {Client} from "sosa-chat-client";
 import jwt from 'jsonwebtoken';
 
 export default class BotCore {
@@ -6,83 +6,103 @@ export default class BotCore {
     currentRoom = null;
     client = null;
     middleware = null;
+    device = {id:'', secret:'', name:'', platform:'bot', pushService:'', isBot: true, botId: 0};
+    session = {};
+    chatService = null;
 
-    constructor(io, server, apiKey, botId, botToken, botSecret) {
-        this.client = new ChatClient(
-            {host: server,api_key: apiKey},
+    constructor(io, config, botId, botToken, botSecret) {
+        this.device.botId = botId;
+        this.device.id = botToken;
+        this.device.secret = botSecret;
+        
+        const client = new Client(
+            config,
             io,
+            null,
             {
-                get:(callback) => {
-                    let packet = {id: botId};
-                    let token = jwt.sign(packet, botSecret);
-                    callback(token, botToken, true);
+                getDevice: () => new Promise(resolve => resolve(this.device)),
+                updateDevice: (device) => new Promise((resolve, reject) => {
+                    this.device = device;
+                    resolve(device);
+                }),
+                getSession: () => new Promise(resolve => resolve(this.session)),
+                updateSession: (session) => new Promise((resolve, reject) => {
+                    this.session = session;
+                    resolve(session);
+                }),
+                generateJWT: (packet) => {
+                    if(!this.device.secret) throw new Error('Device not initialized');
+                    return jwt.sign(packet, this.device.secret);
                 },
-                reauth:(callback) => {
-                    callback(new Error('Bots shouldn\'t need to reauth'));
-                },
-                authFailed:() => {
+                reauth: () => {throw new Error('Bots shouldn\'t need to reauth')},
+                authFailed: () => {
                     console.error('Bot failed to auth', apiKey, botId, botToken, botSecret);
                 }
             }
         );
-        this.middleware = this.client.middleware;
+        this.chatService = client.services.chat;
+        this.middleware = client.middleware;
+        this.client = client;
     }
 
     sendMessage(communityID, roomID, message){
-        this.client.rooms().send(() => {}, communityID, roomID, message);
+        const { chatService: { rooms } } = this;
+        return rooms.send(communityID, roomID, message);
     }
 
-    joinRoom(communityID, roomID, callback){
-        this.client.rooms().join((err, room, userList) => {
-            if(err){
-               console.debug('Couldn\'t join room', err);
-            }else{
+    joinRoom(communityID, roomID){
+        const { chatService: { rooms } } = this;
+        
+        return rooms.join(communityID, roomID)
+            .then(({room, userList}) => {
                 this.currentRoom = room;
-            }
-            callback(room, userList);
-
-        }, communityID, roomID);
+                return {room, userList};
+            })
+            .catch((error) => console.debug(`Couldn't join room`, error));
+        
     };
 
     connect(onAuthenticated, onMessage, onDisconnect){
-        this.middleware.clear();
-        this.middleware.add({
+        const namespace = `bot-${this.device.botId}`;
+        const { middleware } = this;
+        middleware.clear(namespace);
+        middleware.add(namespace, {
             'authentication_successful': (authData) => {
                 if(typeof onAuthenticated === 'function'){
                     try{
-                        authData = onAuthenticated(authData);
+                        onAuthenticated(authData);
                     }catch(e){
                         console.debug('onAuthenticated callback failed', onAuthenticated);
                     }
                 }
                 return authData;
             },
-            'receive_message': (message, client) => {
-                if(typeof onMessage === 'function'){
-                    try{
-                        message = onMessage(message);
-                    }catch(e){
-                        console.debug('onMessage callback failed', onMessage);
+            'event' : (packet) => {
+                const { type, data } = packet;
+                if(type === 'chat/message') {
+                    if(typeof onMessage === 'function') {
+                        try{
+                            return onMessage(data);
+                        }catch (e) {
+                            console.debug('onMessage callback failed', onMessage);
+                        }
                     }
                 }
-
-                return message;
+                return packet;
             },
-            'disconnect': (message, client) => {
+            'disconnect': (reason) => {
                 this.connected = false;
                 this.currentRoom = null;
 
                 if(typeof onDisconnect === 'function'){
                     try{
-                        message = onDisconnect(message);
+                        return onDisconnect(reason);
                     }catch(e){
                         console.debug('onDisconnect callback failed', onDisconnect);
                     }
                 }
-                return message;
+                return reason;
             }
         });
-
-        this.client.connect();
     }
 }

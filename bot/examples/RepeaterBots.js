@@ -98,67 +98,68 @@ let randomUsername = () => {
 };
 
 handleMessage = (index) => {
+    
     if(messages[index]){
         let row = messages[index];
 
         let sendMessage = () => {
             console.log('send', index, messages.length);
 
-            bots[row.nickname].sendMessage('sosa', 'general', row.message.replace(/@[A-Z0-9]+/ig,`@${randomUsername(true)}`));
-            if((index + 1) === messages.length){
-                console.log('Restarting');
-                bots.forEach((bot, index) => {
-                    if(bot !== null){
-                        try{
-                            bot.disconnect();
-                        }catch (e) {
-
-                        } finally {
-                           delete bots[index];
+            return bots[row.nickname].sendMessage('sosa', 'general', row.message.replace(/@[A-Z0-9]+/ig,`@${randomUsername(true)}`)).then(() => {
+                if((index + 1) === messages.length){
+                    console.log('Restarting');
+                    bots.forEach((bot, index) => {
+                        if(bot !== null){
+                            try{
+                                bot.disconnect();
+                            }catch (e) {
+                    
+                            } finally {
+                                delete bots[index];
+                            }
                         }
-                    }
-                });
-
-
-                setTimeout(() => {
-                    handleMessage(0);
-                }, 60000 * 5);
-            }
-            else if(messages[index + 1]){
-                let nextRow = messages[index + 1];
-                let timeout = Math.round((nextRow.timestamp - row.timestamp) * 1000);
-                if(timeout < 30000) timeout = 30000;
-
-                console.log(`Waiting ${timeout / 1000} seconds`);
-
-                setTimeout(() => {
-                    handleMessage(index + 1);
-                }, timeout);
-            }
-
+                    });
+        
+        
+                    setTimeout(() => {
+                        handleMessage(0);
+                    }, 60000 * 5);
+                }
+                else if(messages[index + 1]){
+                    let nextRow = messages[index + 1];
+                    let timeout = Math.round((nextRow.timestamp - row.timestamp) * 1000);
+                    if(timeout < 30000) timeout = 30000;
+        
+                    console.log(`Waiting ${timeout / 1000} seconds`);
+        
+                    setTimeout(() => {
+                        handleMessage(index + 1);
+                    }, timeout);
+                }
+            });
         };
 
         let joinRoom = () => {
             if(bots[row.nickname].currentRoom === null){
-                bots[row.nickname].joinRoom('sosa','general', (room, userList) => {
+                return bots[row.nickname].joinRoom('sosa','general').then(({room, userList}) => {
                     if(room){
                         console.debug(`Joined room ${room.name}`);
                         sendMessage();
                     }
                 });
             }else{
-                sendMessage();
+                return sendMessage();
             }
         };
 
         if(!bots[row.nickname]){
             let botData = botCredentials[Object.keys(bots).length];
-            bots[row.nickname] = new BotCore(io, SoSaConfig.chat.server, SoSaConfig.chat.api_key, botData.id, botData.unique_id, botData.secret);
-
-            let onAuthenticated = (authData) => joinRoom();
-            bots[row.nickname].connect(onAuthenticated);
-        }else{
+            bots[row.nickname] = new BotCore(io, SoSaConfig, botData.id, botData.unique_id, botData.secret);
             joinRoom();
+            
+            bots[row.nickname].connect();
+        }else{
+            return joinRoom();
         }
     }
 };
