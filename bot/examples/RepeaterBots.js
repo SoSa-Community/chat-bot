@@ -128,7 +128,7 @@ handleMessage = (index) => {
                 else if(messages[index + 1]){
                     let nextRow = messages[index + 1];
                     let timeout = Math.round((nextRow.timestamp - row.timestamp) * 1000);
-                    if(timeout < 30000) timeout = 30000;
+                    if(timeout < 10000) timeout = 10000;
         
                     console.log(`Waiting ${timeout / 1000} seconds`);
         
