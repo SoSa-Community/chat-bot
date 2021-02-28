@@ -1,6 +1,6 @@
 {
   "name": "sosa-chat-bot",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Chat Bot for SoSa",
   "main": "app.js",
   "type": "module",
